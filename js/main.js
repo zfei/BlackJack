@@ -8,12 +8,33 @@ $(document).ready(function(){
 	    //called when complete
 	  },
 	  success: function(data, textStatus, xhr) {
-	    $('#games').append('<a href="#' + data[0]['id'] + '">' + data[0]['name'] + '</a>');
+      for (key in data) {
+        $('#games').append('<a href="#' + data[key]['id'] + '">' + data[key]['name'] + '</a>');
+      };
 	  },
 	  error: function(xhr, textStatus, errorThrown) {
 	    //called when there is an error
 	  }
 	});
+
+  $('#create_button').click(function(){
+    $.ajax({
+      url: '/games',
+      type: 'POST',
+      dataType: 'json',
+      data: {'name': $('#create_name').val(),
+             'player_max': $('#create_max').val()},
+      complete: function(xhr, textStatus) {
+        //called when complete
+      },
+      success: function(data, textStatus, xhr) {
+        location.reload(true);
+      },
+      error: function(xhr, textStatus, errorThrown) {
+        //called when there is an error
+      }
+    });
+  });
 	
 
 });

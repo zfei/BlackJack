@@ -17,6 +17,7 @@
 import webapp2
 import jinja2
 import os
+import cgi
 import json
 import random
 from google.appengine.ext import ndb
@@ -29,7 +30,7 @@ class Game(ndb.Model):
   players_current = ndb.IntegerProperty()
 
   def create_game(self, new_game):
-  	self.name = new_game["name"]
+  	self.name = new_game['name']
   	self.id = gid_gen()
   	self.player_max = 2
   	self.players_current = 0
@@ -65,7 +66,9 @@ class GamesHandler(webapp2.RequestHandler):
     	self.response.out.write(json.dumps(games))
 
     def post(self):
-    	new_game = json.loads(cgi.escape(self.request.get('new_game')))
+    	new_game = {}
+    	new_game['name'] = cgi.escape(self.request.get('name'))
+    	new_game['player_max'] = cgi.escape(self.request.get('player_max'))
     	new_game = Game().create_game(new_game)
     	new_game.put()
 

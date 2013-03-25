@@ -32,11 +32,19 @@
 	-moz-border-radius:5px;
 }
 
+#games p
+{
+	margin: 5px auto;
+	display: block;
+	color: white;
+	padding: 10px;
+}
+
 #create_panel
 {
 	padding: 10px 20px;
 	margin-left: 20px;
-	background: #60B9CE;
+	background: #FFCB73;
 	width: 150px;
 	box-shadow: 10px 10px 5px #888888;
 	float: left;
@@ -46,10 +54,17 @@
 {
 	margin: 10px auto;
 	display: block;
-	background: #6A94D4;
+	text-align: center;
+	background: #FFB840;
 	color: white;
 	padding: 20px;
 	overflow: auto;
 	border-radius:5px;
 	-moz-border-radius:5px;
+}
+
+#create_form *
+{
+	width: 110px;
+	margin: 5px 0;
 }
