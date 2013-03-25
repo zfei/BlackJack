@@ -5,7 +5,7 @@
   clear: both;
 }
 
-#wrapper
+#lobby_wrapper, #game_wrapper
 {
 	margin: 20px auto;
 	width: 750px;
@@ -67,4 +67,18 @@
 {
 	width: 110px;
 	margin: 5px 0;
+}
+
+#game_wrapper
+{
+	display: none;
+}
+
+#table
+{
+	padding: 10px 20px;
+	background: #439400;
+	width: 750px;
+	height: 500px;
+	box-shadow: 10px 10px 5px #888888;
 }
