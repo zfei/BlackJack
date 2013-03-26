@@ -71,14 +71,63 @@
 
 #game_wrapper
 {
+	padding: 10px 20px;
+	background: #439400;
+	width: 710px;
+	height: 500px;
+	box-shadow: 10px 10px 5px #888888;
 	display: none;
 }
 
 #table
 {
-	padding: 10px 20px;
-	background: #439400;
-	width: 750px;
-	height: 500px;
-	box-shadow: 10px 10px 5px #888888;
+	height: 450px;
+	overflow: auto;
+}
+
+#info
+{
+	text-align: center;
+}
+
+#table p
+{
+	margin: 5px auto;
+	color: #A9F16C;
+	padding: 15px;
+}
+
+#table .cards
+{
+	background: #64AA2B;
+	overflow: auto;
+	border-radius:5px;
+	-moz-border-radius:5px;
+}
+
+#table .cards span
+{
+	display: inline-block;
+	width: 70px;
+	text-align: center;
+	overflow: auto;
+}
+
+#control
+{
+	text-align: center;
+}
+
+#control span
+{
+	display: inline-block;
+	padding: 10px;
+	margin: 5px;
+	width: 70px;
+	background: #64AA2B;
+	color: white;
+	text-align: center;
+	overflow: auto;
+	border-radius:5px;
+	-moz-border-radius:5px;
 }

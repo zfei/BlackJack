@@ -11,13 +11,14 @@
         <script>window.jQuery || document.write('<script src="js/vendor/jquery-1.8.3.min.js"><\/script>')</script>
         <script type="text/javascript">
             var pid = {{ player_id }};
+            var gid = 0;
         </script>
         <script src="js/main.js"></script>
     </head>
     <body>
         <div id="lobby_wrapper" class="group">
             <div id="games">
-                <p>Hi {{ user }}, below are all active games. Please one click to join.</p>
+                <p>Hi {{ user }}, below are all active games. Please click one to join.</p>
             </div>
             <div id="create_panel">
                 <form id="create_form">
@@ -31,7 +32,11 @@
         
         <div id="game_wrapper">
             <div id="table">
-                <p><span id="game_name"></span><span id="player_count"></span></p>
+            </div>
+            <div id="control">
+                <span onclick="bet();">Bet</span>
+                <span onclick="hit();">Hit</span>
+                <span onclick="stand();">Stand</span>
             </div>
         </div>
     </body>

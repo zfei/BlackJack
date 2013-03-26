@@ -43,6 +43,20 @@ def draw_card(deck):
     return deck.pop()
 
 
+def card_prettifier(raw):
+    card = ''
+    if raw[1] == 'h':
+        card = '&hearts;'
+    elif raw[1] == 'd':
+        card = '&diams;'
+    elif raw[1] == 's':
+        card = '&spades;'
+    elif raw[1] == 'c':
+        card = '&clubs;'
+    card += raw[0]
+    return card
+
+
 class Game(ndb.Model):
     name = ndb.StringProperty()
     id = ndb.IntegerProperty()
@@ -55,13 +69,16 @@ class Game(ndb.Model):
     def create_game(self, new_game):
         self.name = new_game['name']
         self.id = id_gen(16)
-        self.player_max = 2
+        if new_game['player_max'] == '':
+            self.player_max = 13
+        else:
+            self.player_max = int(new_game['player_max'])
         self.players_current = 0
         self.players = '[]'
         the_deck = deck_gen()
         the_common = []
         the_common.append(draw_card(the_deck))
-        the_common.append(draw_card(the_deck))
+        draw_card(the_deck)
         self.common_visible = json.dumps(the_common)
         self.deck = json.dumps(the_deck)
         return self
@@ -99,21 +116,31 @@ class Status(ndb.Model):
     your_actions = ndb.TextProperty()
     your_visible = ndb.TextProperty()
     common_visible = ndb.TextProperty()
+    bet = ndb.IntegerProperty()
 
     def create_status(self, new_status):
         self.game = new_status['game']
         self.player = new_status['player']
         self.your_actions = '[]'
         self.your_visible = '[]'
+        self.bet = 0
         return self
 
     def to_json(self):
         the_game = Game.query(Game.id == self.game).fetch()[0]
+        players_id = json.loads(the_game.players)
+        # players_json = []
+        # for pid in players_id:
+        #     players_json.append(
+        #         Player.query(Player.id == pid).fetch()[0].to_json())
         json_obj = {
+            'name': str(the_game.name),
             'your_actions': json.loads(self.your_actions), 
             'your_cards_visisble': json.loads(self.your_visible), 
             'common_cards_visible': json.loads(the_game.common_visible),
-            'players': json.loads(the_game.players)}
+            # 'players': players_json}
+            'players': players_id,
+            'bet': self.bet}
         return json_obj
 
 
@@ -187,12 +214,43 @@ class StatusHandler(webapp2.RequestHandler):
 
 class TableHandler(webapp2.RequestHandler):
     def get(self, gid):
-        return
+        gid = int(gid)
+        the_game = Game.query(Game.id == gid).fetch()[0]
+        snippet = ''
+        snippet += '<p id="info"><span id="game_name">\
+            ' + the_game.name + '</span> '
+        snippet += '<span id="player_count">(' + str(
+            the_game.players_current) + '/' + str(the_game.player_max) + '\
+            )</span>'
+        snippet += '</p>'
+        snippet += '<p class="cards" id="dealer"><span>Dealer</span>'
+        snippet += '<span>**</span>'
+        for common_card in json.loads(str(the_game.common_visible)):
+            snippet += '<span>' + card_prettifier(common_card) + '</span>'
+        snippet += '</p>'
+        for pid in json.loads(str(the_game.players)):
+            the_status = Status.query(
+                ndb.AND(Status.player == pid, Status.game == gid)).fetch()[0]
+            snippet += '<p class="cards" id="' + str(pid) + '"><span>\
+                ' + Player.query(Player.id == pid).fetch()[0].name + '</span>'
+            for your_card in json.loads(str(the_status.your_visible)):
+                snippet += '<span>' + card_prettifier(your_card) + '</span>'
+            snippet += '</p>'
+        self.response.out.write(snippet)
 
 
 class ActionHandler(webapp2.RequestHandler):
     def post(self, gid):
-        return
+        gid = int(gid)
+        pid = int(cgi.escape(self.request.get('player_id')))
+        action = str(cgi.escape(self.request.get('action')))
+        value = int(cgi.escape(self.request.get('value')))
+        if action == 'bet':
+            self.response.out.write('ok')
+        elif action == 'hit':
+            self.response.out.write('ok')
+        elif action == 'stand':
+            self.response.out.write('ok')
 
 
 jinja_environment = jinja2.Environment(
