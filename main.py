@@ -424,7 +424,17 @@ class ActionHandler(webapp2.RequestHandler):
                 player_cards = json.loads(str(the_status.your_visible))
                 player_cards.append(str(the_status.your_hidden))
                 if card_sum(player_cards) <= 21:
-
+                    if !dealer_bust:
+                        if card_sum(player_cards) > card_sum(dealer_cards):
+                            the_player = Player.query(
+                                Player.email == user.email()).fetch()[0]
+                            the_player.tokens += the_status.bet
+                            the_player.put()
+                    else:
+                        the_player = Player.query(
+                                Player.email == user.email()).fetch()[0]
+                            the_player.tokens += the_status.bet
+                            the_player.put()
             the_game.end = True
             the_game.put()
         else:
