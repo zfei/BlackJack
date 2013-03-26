@@ -57,6 +57,29 @@ def card_prettifier(raw):
     return card
 
 
+def card_sum(cards):
+    sum = 0
+    a_counter = 0
+    for card in cards:
+        card_len = len(card)
+        if card_len == 3:
+            sum += 10
+        elif card[0] == 'A':
+            sum += 11
+            a_counter += 1
+        elif (card[0] == 'J' or card[0] == 'Q' or card[0] == 'K'):
+            sum += 10
+        else:
+            sum += int(card[0])
+    while sum > 21:
+        if a_counter > 0:
+            sum -= 10
+            a_counter -= 1
+        else:
+            break
+    return sum
+
+
 class Game(ndb.Model):
     name = ndb.StringProperty()
     id = ndb.IntegerProperty()
@@ -223,8 +246,8 @@ class TableHandler(webapp2.RequestHandler):
         snippet += '<p id="info"><span id="game_name">\
             ' + the_game.name + '</span> '
         snippet += '<span id="player_count">(' + str(
-            the_game.players_current) + '/' + str(the_game.player_max) + '\
-            )</span>'
+            the_game.players_current) + '/' + str(the_game.player_max) + ')\
+            </span>'
         snippet += '</p>'
         snippet += '<p class="cards" id="dealer"><span>Dealer</span>'
         snippet += '<span>**</span>'
@@ -240,11 +263,13 @@ class TableHandler(webapp2.RequestHandler):
                 the_player = Player.query(Player.id == pid).fetch()[0]
                 user = users.get_current_user()
                 if the_player.email == user.email():
-                    snippet += '<span>' + card_prettifier(the_status.your_hidden) + '</span>'
+                    snippet += '<span>' + card_prettifier(
+                        the_status.your_hidden) + '</span>'
                 else:
                     snippet += '<span>**</span>'
                 for your_card in json.loads(str(the_status.your_visible)):
-                    snippet += '<span>' + card_prettifier(your_card) + '</span>'
+                    snippet += '<span>\
+                    ' + card_prettifier(your_card) + '</span>'
             snippet += '</p>'
         self.response.out.write(snippet)
 
@@ -328,10 +353,12 @@ class ActionHandler(webapp2.RequestHandler):
             if bet_counter == 2:
                 self.response.out.write('error')
                 return
+            if your_actions[len(your_actions) - 1] == 'stand':
+                self.response.out.write('error')
+                return
 
             your_actions.append('hit')
-            the_status.your_actions = json.dumps(your_actions)
-
+            
             the_deck = json.loads(str(the_game.deck))
             if the_deck == []:
                 the_deck = deck_gen()
@@ -341,10 +368,38 @@ class ActionHandler(webapp2.RequestHandler):
             the_status.your_visible = json.dumps(your_visible)
             the_game.put()
 
+            cards = json.loads(str(the_status.your_visible))
+            cards.append(str(the_status.your_hidden))
+            if card_sum(cards) > 21:
+                your_actions.append('stand')
+            the_status.your_actions = json.dumps(your_actions)
             the_status.put()
             self.response.out.write('ok')
         elif action == 'stand':
+            your_actions = json.loads(str(the_status.your_actions))
+            if your_actions[len(your_actions) - 1] == 'stand':
+                self.response.out.write('error')
+                return
+            your_actions.append('stand')
+            the_status.your_actions = json.dumps(your_actions)
+            the_status.put()
             self.response.out.write('ok')
+        else:
+            self.response.out.write('error')
+        # stand_flag = true
+        # for the_pid in json.loads(str(the_game.players)):
+        #     the_status = Status.query(
+        #         ndb.AND(Status.player == the_pid, Status.game == gid)).fetch()[0]
+        #     your_actions = json.loads(str(the_status.your_actions))
+        #         if your_actions[len(your_actions) - 1] != 'stand':
+        #             stand_flag = false
+        #             break
+        # if stand_flag:
+        #     dealer_cards = json.loads(str(the_game.common_visible))
+        #     dealer_cards.append(str(the_game.common_hidden))
+        #     dealer_sum = card_sum(dealer_cards)
+        # else:
+        #     return
 
 
 jinja_environment = jinja2.Environment(

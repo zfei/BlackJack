@@ -127,7 +127,21 @@
 	background: #64AA2B;
 	color: white;
 	text-align: center;
-	overflow: auto;
+	overflow-y: auto;
 	border-radius:5px;
 	-moz-border-radius:5px;
+}
+
+#request
+{
+	margin: 80px auto;
+	width: 500px;
+	background: #01939A;
+	color: white;
+	padding: 15px;
+	text-align: center;
+	border-radius:5px;
+	-moz-border-radius:5px;
+	box-shadow: 10px 10px 5px #888888;
+	display: none;
 }

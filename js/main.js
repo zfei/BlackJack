@@ -53,7 +53,6 @@ function connect(game_id) {
         alert('Failed joining the game. Maybe this room is full.');
       } else {
         $('#lobby_wrapper').fadeOut('slow', function(){
-          $('#game_wrapper').fadeIn('slow');
           getTableInfo();
         });
       }
@@ -74,6 +73,7 @@ function getTableInfo() {
     },
     success: function(data, textStatus, xhr) {
       $('#table').html(data);
+      $('#game_wrapper').fadeIn('slow');
     },
     error: function(xhr, textStatus, errorThrown) {
       //called when there is an error
@@ -83,21 +83,23 @@ function getTableInfo() {
 
 function bet() {
   var amount = prompt("Please make your bet.", 10);
+  $('#game_wrapper').hide();
+  $('#request').fadeIn('slow');
   $.ajax({
     url: '/game/' + gid + '/action',
     type: 'POST',
     dataType: 'html',
     data: {'player_id': pid, 'action': 'bet', 'value': amount},
     complete: function(xhr, textStatus) {
-      //called when complete
+      $('#request').hide();
     },
     success: function(data, textStatus, xhr) {
       if( data == 'error' ) {
         alert('Failed making bet. Please check your amount.');
       } else {
         alert('Succeeded.');
-        getTableInfo(gid);
       }
+      getTableInfo();
     },
     error: function(xhr, textStatus, errorThrown) {
       //called when there is an error
@@ -106,20 +108,21 @@ function bet() {
 }
 
 function hit() {
+  $('#game_wrapper').hide();
+  $('#request').fadeIn('slow');
   $.ajax({
     url: '/game/' + gid + '/action',
     type: 'POST',
     dataType: 'html',
     data: {'player_id': pid, 'action': 'hit'},
     complete: function(xhr, textStatus) {
-      //called when complete
+      $('#request').hide();
     },
     success: function(data, textStatus, xhr) {
       if( data == 'error' ) {
-        alert('Failed joining the game. Maybe this room is full.');
-      } else {
-        getTableInfo(gid);
+        alert('Failed drawing card. Maybe you chose to stand, doubled down, or busted.');
       }
+      getTableInfo();
     },
     error: function(xhr, textStatus, errorThrown) {
       //called when there is an error
@@ -128,20 +131,21 @@ function hit() {
 }
 
 function stand() {
+  $('#game_wrapper').hide();
+  $('#request').fadeIn('slow');
   $.ajax({
     url: '/game/' + gid + '/action',
     type: 'POST',
     dataType: 'html',
     data: {'player_id': pid, 'action': 'stand'},
     complete: function(xhr, textStatus) {
-      //called when complete
+      $('#request').hide();
     },
     success: function(data, textStatus, xhr) {
       if( data == 'error' ) {
-        alert('Failed joining the game. Maybe this room is full.');
-      } else {
-        getTableInfo(gid);
+        alert('Failed. Maybe you chose to stand, doubled down, or busted.');
       }
+      getTableInfo();
     },
     error: function(xhr, textStatus, errorThrown) {
       //called when there is an error
