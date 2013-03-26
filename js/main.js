@@ -11,7 +11,9 @@ $(document).ready(function() {
 	  },
 	  success: function(data, textStatus, xhr) {
       for (key in data) {
-        $('#games').append('<a onclick="connect(' + data[key]['id'] + ');">' + data[key]['name'] + '</a>');
+        if ( !data[key]['end'] ) {
+          $('#games').append('<a onclick="connect(' + data[key]['id'] + ');">' + data[key]['name'] + '</a>');
+        }
       };
 	  },
 	  error: function(xhr, textStatus, errorThrown) {

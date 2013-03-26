@@ -113,7 +113,8 @@ class Game(ndb.Model):
     def to_json(self):
         json_obj = {'name': self.name, 'id': self.id, 
                     'player_max': self.player_max, 
-                    'players_current': self.players_current}
+                    'players_current': self.players_current,
+                    'end': self.end}
         return json_obj
 
 
@@ -253,7 +254,9 @@ class TableHandler(webapp2.RequestHandler):
         the_game = Game.query(Game.id == gid).fetch()[0]
         snippet = ''
         if the_game.end:
-            snippet = '<script>location.reload(true);</script>'
+            snippet = '<script>\
+            alert("Game Ends. Please check your tokens.");\
+            location.reload(true);</script>'
         snippet += '<p id="info"><span id="game_name">\
             ' + the_game.name + '</span> '
         snippet += '<span id="player_count">(' + str(
@@ -355,48 +358,47 @@ class ActionHandler(webapp2.RequestHandler):
         elif action == 'hit':
             if the_status.bet == 0:
                 self.response.out.write('error')
-                return
-            your_actions = json.loads(str(the_status.your_actions))
-            bet_counter = 0
-            for act in your_actions:
-                if act == 'bet':
-                    bet_counter += 1
-            if bet_counter == 2:
-                self.response.out.write('error')
-                return
-            if your_actions[len(your_actions) - 1] == 'stand':
-                self.response.out.write('error')
-                return
+            else:
+                your_actions = json.loads(str(the_status.your_actions))
+                bet_counter = 0
+                for act in your_actions:
+                    if act == 'bet':
+                        bet_counter += 1
+                if bet_counter == 2:
+                    self.response.out.write('error')
+                elif your_actions[len(your_actions) - 1] == 'stand':
+                    self.response.out.write('error')
+                else:
+                    your_actions.append('hit')
+                    
+                    the_deck = json.loads(str(the_game.deck))
+                    if the_deck == []:
+                        the_deck = deck_gen()
+                    your_visible = json.loads(str(the_status.your_visible))
+                    your_visible.append(the_deck.pop())
+                    the_game.deck = json.dumps(the_deck)
+                    the_status.your_visible = json.dumps(your_visible)
+                    the_game.put()
 
-            your_actions.append('hit')
-            
-            the_deck = json.loads(str(the_game.deck))
-            if the_deck == []:
-                the_deck = deck_gen()
-            your_visible = json.loads(str(the_status.your_visible))
-            your_visible.append(the_deck.pop())
-            the_game.deck = json.dumps(the_deck)
-            the_status.your_visible = json.dumps(your_visible)
-            the_game.put()
-
-            cards = json.loads(str(the_status.your_visible))
-            cards.append(str(the_status.your_hidden))
-            if card_sum(cards) > 21:
-                your_actions.append('stand')
-            the_status.your_actions = json.dumps(your_actions)
-            the_status.put()
-            self.response.out.write('ok')
+                    cards = json.loads(str(the_status.your_visible))
+                    cards.append(str(the_status.your_hidden))
+                    if card_sum(cards) > 21:
+                        your_actions.append('stand')
+                    the_status.your_actions = json.dumps(your_actions)
+                    the_status.put()
+                    self.response.out.write('ok')
         elif action == 'stand':
             your_actions = json.loads(str(the_status.your_actions))
             if your_actions[len(your_actions) - 1] == 'stand':
                 self.response.out.write('error')
-                return
-            your_actions.append('stand')
-            the_status.your_actions = json.dumps(your_actions)
-            the_status.put()
-            self.response.out.write('ok')
+            else:
+                your_actions.append('stand')
+                the_status.your_actions = json.dumps(your_actions)
+                the_status.put()
+                self.response.out.write('ok')
         else:
             self.response.out.write('error')
+
         stand_flag = True
         for the_pid in json.loads(str(the_game.players)):
             the_status = Status.query(
@@ -425,15 +427,16 @@ class ActionHandler(webapp2.RequestHandler):
                 player_cards.append(str(the_status.your_hidden))
                 if card_sum(player_cards) <= 21:
                     if not dealer_bust:
+                        user = users.get_current_user()
                         if card_sum(player_cards) > card_sum(dealer_cards):
                             the_player = Player.query(
                                 Player.email == user.email()).fetch()[0]
-                            the_player.tokens += the_status.bet
+                            the_player.tokens += the_status.bet * 2
                             the_player.put()
                     else:
                         the_player = Player.query(
                                 Player.email == user.email()).fetch()[0]
-                        the_player.tokens += the_status.bet
+                        the_player.tokens += the_status.bet * 2
                         the_player.put()
             the_game.end = True
             the_game.put()
