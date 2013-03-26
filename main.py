@@ -39,21 +39,21 @@ def deck_gen():
     return deck
 
 
-def draw_card(deck):
-    return deck.pop()
-
-
 def card_prettifier(raw):
     card = ''
-    if raw[1] == 'h':
+    raw_len = len(raw)
+    if raw[raw_len - 1] == 'h':
         card = '&hearts;'
-    elif raw[1] == 'd':
+    elif raw[raw_len - 1] == 'd':
         card = '&diams;'
-    elif raw[1] == 's':
+    elif raw[raw_len - 1] == 's':
         card = '&spades;'
-    elif raw[1] == 'c':
+    elif raw[raw_len - 1] == 'c':
         card = '&clubs;'
-    card += raw[0]
+    if raw_len == 3:
+        card += '10'
+    else:
+        card += raw[0]
     return card
 
 
@@ -64,6 +64,7 @@ class Game(ndb.Model):
     players_current = ndb.IntegerProperty()
     players = ndb.TextProperty()
     common_visible = ndb.TextProperty()
+    common_hidden = ndb.TextProperty()
     deck = ndb.TextProperty()
 
     def create_game(self, new_game):
@@ -77,9 +78,10 @@ class Game(ndb.Model):
         self.players = '[]'
         the_deck = deck_gen()
         the_common = []
-        the_common.append(draw_card(the_deck))
-        draw_card(the_deck)
+        the_common.append(the_deck.pop())
+        the_common_hidden = the_deck.pop()
         self.common_visible = json.dumps(the_common)
+        self.common_hidden = the_common_hidden
         self.deck = json.dumps(the_deck)
         return self
 
@@ -115,7 +117,7 @@ class Status(ndb.Model):
     player = ndb.IntegerProperty()
     your_actions = ndb.TextProperty()
     your_visible = ndb.TextProperty()
-    common_visible = ndb.TextProperty()
+    your_hidden = ndb.TextProperty()
     bet = ndb.IntegerProperty()
 
     def create_status(self, new_status):
@@ -123,6 +125,7 @@ class Status(ndb.Model):
         self.player = new_status['player']
         self.your_actions = '[]'
         self.your_visible = '[]'
+        self.your_hidden = ''
         self.bet = 0
         return self
 
@@ -233,8 +236,15 @@ class TableHandler(webapp2.RequestHandler):
                 ndb.AND(Status.player == pid, Status.game == gid)).fetch()[0]
             snippet += '<p class="cards" id="' + str(pid) + '"><span>\
                 ' + Player.query(Player.id == pid).fetch()[0].name + '</span>'
-            for your_card in json.loads(str(the_status.your_visible)):
-                snippet += '<span>' + card_prettifier(your_card) + '</span>'
+            if the_status.bet != 0:
+                the_player = Player.query(Player.id == pid).fetch()[0]
+                user = users.get_current_user()
+                if the_player.email == user.email():
+                    snippet += '<span>' + card_prettifier(the_status.your_hidden) + '</span>'
+                else:
+                    snippet += '<span>**</span>'
+                for your_card in json.loads(str(the_status.your_visible)):
+                    snippet += '<span>' + card_prettifier(your_card) + '</span>'
             snippet += '</p>'
         self.response.out.write(snippet)
 
@@ -244,10 +254,94 @@ class ActionHandler(webapp2.RequestHandler):
         gid = int(gid)
         pid = int(cgi.escape(self.request.get('player_id')))
         action = str(cgi.escape(self.request.get('action')))
-        value = int(cgi.escape(self.request.get('value')))
+        if self.request.get('value'):
+            value = int(cgi.escape(self.request.get('value')))
+        the_player = Player.query(Player.id == pid).fetch()[0]
+        the_status = Status.query(
+                ndb.AND(Status.player == pid, Status.game == gid)).fetch()[0]
+        the_game = Game.query(Game.id == gid).fetch()[0]
         if action == 'bet':
-            self.response.out.write('ok')
+            if the_status.bet == 0:
+                if value <= the_player.tokens and value > 0:
+                    your_actions = json.loads(str(the_status.your_actions))
+                    your_actions.append('bet')
+                    the_status.your_actions = json.dumps(your_actions)
+                    the_status.bet = value
+                    the_player.tokens -= value
+
+                    the_deck = json.loads(str(the_game.deck))
+                    if the_deck == []:
+                        the_deck = deck_gen()
+                    your_hidden = the_deck.pop()
+                    if the_deck == []:
+                        the_deck = deck_gen()
+                    your_visible = [the_deck.pop()]
+                    the_game.deck = json.dumps(the_deck)
+
+                    the_status.your_hidden = your_hidden
+                    the_status.your_visible = json.dumps(your_visible)
+                    the_game.put()
+                    the_status.put()
+                    the_player.put()
+                    self.response.out.write('ok')
+                else:
+                    self.response.out.write('error')
+            else:
+                if value <= the_player.tokens and value == the_status.bet:
+                    your_actions = json.loads(str(the_status.your_actions))
+                    bet_counter = 0
+                    for act in your_actions:
+                        if act == 'bet':
+                            bet_counter += 1
+                    if bet_counter > 1:
+                        self.response.out.write('error')
+                        return
+                    your_actions.append('bet')
+                    the_status.your_actions = json.dumps(your_actions)
+                    the_status.bet += value
+                    the_player.tokens -= value
+
+                    the_deck = json.loads(str(the_game.deck))
+                    if the_deck == []:
+                        the_deck = deck_gen()
+                    your_visible = json.loads(str(the_status.your_visible))
+                    your_visible.append(the_deck.pop())
+                    the_game.deck = json.dumps(the_deck)
+                    the_status.your_visible = json.dumps(your_visible)
+                    the_game.put()
+
+                    the_status.put()
+                    the_player.put()
+                    self.response.out.write('ok')
+                else:
+                    self.response.out.write('error')
+            return
         elif action == 'hit':
+            if the_status.bet == 0:
+                self.response.out.write('error')
+                return
+            your_actions = json.loads(str(the_status.your_actions))
+            bet_counter = 0
+            for act in your_actions:
+                if act == 'bet':
+                    bet_counter += 1
+            if bet_counter == 2:
+                self.response.out.write('error')
+                return
+
+            your_actions.append('hit')
+            the_status.your_actions = json.dumps(your_actions)
+
+            the_deck = json.loads(str(the_game.deck))
+            if the_deck == []:
+                the_deck = deck_gen()
+            your_visible = json.loads(str(the_status.your_visible))
+            your_visible.append(the_deck.pop())
+            the_game.deck = json.dumps(the_deck)
+            the_status.your_visible = json.dumps(your_visible)
+            the_game.put()
+
+            the_status.put()
             self.response.out.write('ok')
         elif action == 'stand':
             self.response.out.write('ok')

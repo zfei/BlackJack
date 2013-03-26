@@ -96,6 +96,7 @@ function bet() {
         alert('Failed making bet. Please check your amount.');
       } else {
         alert('Succeeded.');
+        getTableInfo(gid);
       }
     },
     error: function(xhr, textStatus, errorThrown) {
@@ -117,10 +118,7 @@ function hit() {
       if( data == 'error' ) {
         alert('Failed joining the game. Maybe this room is full.');
       } else {
-        $('#lobby_wrapper').fadeOut('slow', function(){
-          $('#game_wrapper').fadeIn('slow');
-          getTableInfo(gid);
-        });
+        getTableInfo(gid);
       }
     },
     error: function(xhr, textStatus, errorThrown) {
@@ -142,10 +140,7 @@ function stand() {
       if( data == 'error' ) {
         alert('Failed joining the game. Maybe this room is full.');
       } else {
-        $('#lobby_wrapper').fadeOut('slow', function(){
-          $('#game_wrapper').fadeIn('slow');
-          getTableInfo(gid);
-        });
+        getTableInfo(gid);
       }
     },
     error: function(xhr, textStatus, errorThrown) {
