@@ -21,6 +21,8 @@
         <div id="lobby_wrapper" class="group">
             <div id="games">
                 <p>Hi {{ user }}, below are all active games. Please click one to join.</p>
+                <span onclick="location.reload(true);">Refresh</span>
+                <span id="tokens">Your Tokens:</span>
             </div>
             <div id="create_panel">
                 <form id="create_form">

@@ -1,5 +1,7 @@
 $(document).ready(function() {
 
+  getTokens();
+
 	$.ajax({
 	  url: '/games',
 	  type: 'GET',
@@ -38,6 +40,23 @@ $(document).ready(function() {
 
 });
 
+function getTokens() {
+  $.ajax({
+    url: '/player',
+    type: 'GET',
+    dataType: 'html',
+    complete: function(xhr, textStatus) {
+      //called when complete
+    },
+    success: function(data, textStatus, xhr) {
+      $('#tokens').html('Your Tokens: ' + data);
+    },
+    error: function(xhr, textStatus, errorThrown) {
+      //called when there is an error
+    }
+  });
+}
+
 function connect(game_id) {
   gid = game_id;
   $.ajax({
@@ -54,6 +73,10 @@ function connect(game_id) {
       } else {
         $('#lobby_wrapper').fadeOut('slow', function(){
           getTableInfo();
+          $('#game_wrapper').fadeIn('slow');
+          setInterval(function(){
+            getTableInfo();
+          }, 1000);
         });
       }
     },
@@ -73,7 +96,6 @@ function getTableInfo() {
     },
     success: function(data, textStatus, xhr) {
       $('#table').html(data);
-      $('#game_wrapper').fadeIn('slow');
     },
     error: function(xhr, textStatus, errorThrown) {
       //called when there is an error
@@ -83,21 +105,21 @@ function getTableInfo() {
 
 function bet() {
   var amount = prompt("Please make your bet.", 10);
-  $('#game_wrapper').hide();
-  $('#request').fadeIn('slow');
+  // $('#game_wrapper').hide();
+  // $('#request').fadeIn('slow');
   $.ajax({
     url: '/game/' + gid + '/action',
     type: 'POST',
     dataType: 'html',
     data: {'player_id': pid, 'action': 'bet', 'value': amount},
     complete: function(xhr, textStatus) {
-      $('#request').hide();
+      // $('#request').hide();
     },
     success: function(data, textStatus, xhr) {
       if( data == 'error' ) {
         alert('Failed making bet. Please check your amount.');
       } else {
-        alert('Succeeded.');
+        // alert('Succeeded.');
       }
       getTableInfo();
     },
@@ -108,15 +130,15 @@ function bet() {
 }
 
 function hit() {
-  $('#game_wrapper').hide();
-  $('#request').fadeIn('slow');
+  // $('#game_wrapper').hide();
+  // $('#request').fadeIn('slow');
   $.ajax({
     url: '/game/' + gid + '/action',
     type: 'POST',
     dataType: 'html',
     data: {'player_id': pid, 'action': 'hit'},
     complete: function(xhr, textStatus) {
-      $('#request').hide();
+      // $('#request').hide();
     },
     success: function(data, textStatus, xhr) {
       if( data == 'error' ) {
@@ -131,15 +153,15 @@ function hit() {
 }
 
 function stand() {
-  $('#game_wrapper').hide();
-  $('#request').fadeIn('slow');
+  // $('#game_wrapper').hide();
+  // $('#request').fadeIn('slow');
   $.ajax({
     url: '/game/' + gid + '/action',
     type: 'POST',
     dataType: 'html',
     data: {'player_id': pid, 'action': 'stand'},
     complete: function(xhr, textStatus) {
-      $('#request').hide();
+      // $('#request').hide();
     },
     success: function(data, textStatus, xhr) {
       if( data == 'error' ) {

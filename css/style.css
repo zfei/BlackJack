@@ -20,6 +20,16 @@
 	float: left;
 }
 
+#games span
+{
+	display: inline-block;
+	background: #6A94D4;
+	color: white;
+	padding: 10px 20px;
+	border-radius:5px;
+	-moz-border-radius:5px;
+}
+
 #games a
 {
 	margin: 10px auto;
@@ -27,7 +37,6 @@
 	background: #6A94D4;
 	color: white;
 	padding: 20px;
-	overflow: auto;
 	border-radius:5px;
 	-moz-border-radius:5px;
 }
@@ -58,7 +67,6 @@
 	background: #FFB840;
 	color: white;
 	padding: 20px;
-	overflow: auto;
 	border-radius:5px;
 	-moz-border-radius:5px;
 }
@@ -100,7 +108,6 @@
 #table .cards
 {
 	background: #64AA2B;
-	overflow: auto;
 	border-radius:5px;
 	-moz-border-radius:5px;
 }
@@ -110,7 +117,7 @@
 	display: inline-block;
 	width: 70px;
 	text-align: center;
-	overflow: auto;
+	overflow: hidden;
 }
 
 #control
@@ -127,7 +134,6 @@
 	background: #64AA2B;
 	color: white;
 	text-align: center;
-	overflow-y: auto;
 	border-radius:5px;
 	-moz-border-radius:5px;
 }

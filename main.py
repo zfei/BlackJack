@@ -89,6 +89,7 @@ class Game(ndb.Model):
     common_visible = ndb.TextProperty()
     common_hidden = ndb.TextProperty()
     deck = ndb.TextProperty()
+    end = ndb.BooleanProperty()
 
     def create_game(self, new_game):
         self.name = new_game['name']
@@ -106,6 +107,7 @@ class Game(ndb.Model):
         self.common_visible = json.dumps(the_common)
         self.common_hidden = the_common_hidden
         self.deck = json.dumps(the_deck)
+        self.end = False
         return self
 
     def to_json(self):
@@ -188,6 +190,13 @@ class MainHandler(webapp2.RequestHandler):
             self.redirect(users.create_login_url(self.request.uri))
 
 
+class PlayerHandler(webapp2.RequestHandler):
+    def get(self):
+        user = users.get_current_user()
+        the_player = Player.query(Player.email == user.email()).fetch()[0]
+        self.response.out.write(the_player.tokens)
+
+
 class GamesHandler(webapp2.RequestHandler):
     def get(self):
         games = []
@@ -243,6 +252,8 @@ class TableHandler(webapp2.RequestHandler):
         gid = int(gid)
         the_game = Game.query(Game.id == gid).fetch()[0]
         snippet = ''
+        if the_game.end:
+            snippet = '<script>location.reload(true);</script>'
         snippet += '<p id="info"><span id="game_name">\
             ' + the_game.name + '</span> '
         snippet += '<span id="player_count">(' + str(
@@ -386,20 +397,38 @@ class ActionHandler(webapp2.RequestHandler):
             self.response.out.write('ok')
         else:
             self.response.out.write('error')
-        # stand_flag = true
-        # for the_pid in json.loads(str(the_game.players)):
-        #     the_status = Status.query(
-        #         ndb.AND(Status.player == the_pid, Status.game == gid)).fetch()[0]
-        #     your_actions = json.loads(str(the_status.your_actions))
-        #         if your_actions[len(your_actions) - 1] != 'stand':
-        #             stand_flag = false
-        #             break
-        # if stand_flag:
-        #     dealer_cards = json.loads(str(the_game.common_visible))
-        #     dealer_cards.append(str(the_game.common_hidden))
-        #     dealer_sum = card_sum(dealer_cards)
-        # else:
-        #     return
+        stand_flag = True
+        for the_pid in json.loads(str(the_game.players)):
+            the_status = Status.query(
+                ndb.AND(Status.player == the_pid, 
+                Status.game == gid)).fetch()[0]
+            your_actions = json.loads(str(the_status.your_actions))
+            if your_actions[len(your_actions) - 1] != 'stand':
+                stand_flag = False
+                break
+        if stand_flag:
+            dealer_bust = False
+            dealer_cards = json.loads(str(the_game.common_visible))
+            dealer_cards.append(str(the_game.common_hidden))
+            the_deck = json.loads(str(the_game.deck))
+            while card_sum(dealer_cards) <= 16:
+                if the_deck == []:
+                    the_deck = deck_gen()
+                dealer_cards.append(the_deck.pop())
+            if card_sum(dealer_cards) > 21:
+                dealer_bust = True
+            for the_pid in json.loads(str(the_game.players)):
+                the_status = Status.query(
+                    ndb.AND(Status.player == the_pid, 
+                    Status.game == gid)).fetch()[0]
+                player_cards = json.loads(str(the_status.your_visible))
+                player_cards.append(str(the_status.your_hidden))
+                if card_sum(player_cards) <= 21:
+
+            the_game.end = True
+            the_game.put()
+        else:
+            return
 
 
 jinja_environment = jinja2.Environment(
@@ -408,6 +437,7 @@ jinja_environment = jinja2.Environment(
 
 app = webapp2.WSGIApplication([
     ('/', MainHandler),
+    ('/player', PlayerHandler),
     ('/games', GamesHandler),
     ('/game/(\d+)/playerConnect', ConnectHandler),
     ('/game/(\d+)/status', StatusHandler),
