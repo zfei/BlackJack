@@ -27,10 +27,12 @@ from cors.cors_options import CorsOptions
 
 
 def id_gen(len=16):
+    """Generates and returns a random id of given length"""
     return int(str(int(random.random() * (10**len))).zfill(len))
 
 
 def deck_gen():
+    """Generates and returns a shuffled deck of cards"""
     suit = ['h', 'd', 's', 'c']
     rank = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A']
     deck = []
@@ -42,6 +44,7 @@ def deck_gen():
 
 
 def card_prettifier(raw):
+    """Returns a card text in pretty format"""
     card = ''
     raw_len = len(raw)
     if raw[raw_len - 1] == 'h':
@@ -60,6 +63,7 @@ def card_prettifier(raw):
 
 
 def card_sum(cards):
+    """Calculates and returns the sum of a card list"""
     sum = 0
     a_counter = 0
     for card in cards:
@@ -160,16 +164,11 @@ class Status(ndb.Model):
     def to_json(self):
         the_game = Game.query(Game.id == self.game).fetch()[0]
         players_id = json.loads(the_game.players)
-        # players_json = []
-        # for pid in players_id:
-        #     players_json.append(
-        #         Player.query(Player.id == pid).fetch()[0].to_json())
         json_obj = {
             'name': str(the_game.name),
             'your_actions': json.loads(self.your_actions), 
             'your_cards_visisble': json.loads(self.your_visible), 
             'common_cards_visible': json.loads(the_game.common_visible),
-            # 'players': players_json}
             'players': players_id,
             'bet': self.bet}
         return json_obj
@@ -177,6 +176,7 @@ class Status(ndb.Model):
 
 class MainHandler(webapp2.RequestHandler):
     def get(self):
+        """Renders client page"""
         user = users.get_current_user()
         if user:
             if Player.query(Player.email == user.email()).fetch() == []:
@@ -195,6 +195,7 @@ class MainHandler(webapp2.RequestHandler):
 
 class PlayerHandler(webapp2.RequestHandler):
     def get(self):
+        """Extra handler to deliver players' info"""
         user = users.get_current_user()
         the_player = Player.query(Player.email == user.email()).fetch()[0]
         self.response.out.write(the_player.tokens)
@@ -202,6 +203,7 @@ class PlayerHandler(webapp2.RequestHandler):
 
 class GamesHandler(webapp2.RequestHandler):
     def get(self):
+        """Lists all games, including inactive ones"""
         games = []
         for each_game in Game.query():
             games.append(each_game.to_json())
@@ -209,6 +211,7 @@ class GamesHandler(webapp2.RequestHandler):
         self.response.out.write(json.dumps(games))
 
     def post(self):
+        """Creates new game entity"""
         new_game = {}
         new_game['name'] = cgi.escape(self.request.get('name'))
         new_game['player_max'] = cgi.escape(self.request.get('player_max'))
@@ -218,10 +221,12 @@ class GamesHandler(webapp2.RequestHandler):
 
 class ConnectHandler(webapp2.RequestHandler):
     def post(self, gid):
+        """Connects player to a game specified"""
         gid = int(gid)
         pid = int(cgi.escape(self.request.get('player')))
         if Status.query(
             ndb.AND(Status.player == pid, Status.game == gid)).fetch() == []:
+            # if the player isn't connected to the game yet, create a game status
             the_game = Game.query(Game.id == gid).fetch()[0]
             if the_game.player_max <= the_game.players_current:
                 self.response.out.write('error')
@@ -230,6 +235,11 @@ class ConnectHandler(webapp2.RequestHandler):
                 new_status['game'] = gid
                 new_status['player'] = pid
                 Status().create_status(new_status).put()
+
+
+                # @ndb.transactional here
+
+
                 the_game.players_current += 1
                 the_players = json.loads(str(the_game.players))
                 the_players.append(pid)
@@ -237,11 +247,13 @@ class ConnectHandler(webapp2.RequestHandler):
                 the_game.put()
                 self.response.out.write('ok')
         else:
+            # if the player in already connected to the game, just pass
             self.response.out.write('ok')
 
 
 class StatusHandler(webapp2.RequestHandler):
     def get(self, gid):
+        """Returns game status"""
         gid = int(gid)
         pid = int(cgi.escape(self.request.get('player_id')))
         the_status = Status.query(
@@ -252,6 +264,7 @@ class StatusHandler(webapp2.RequestHandler):
 
 class TableHandler(webapp2.RequestHandler):
     def get(self, gid):
+        """Returns html snippet of the game table"""
         gid = int(gid)
         the_game = Game.query(Game.id == gid).fetch()[0]
         snippet = ''
@@ -292,6 +305,7 @@ class TableHandler(webapp2.RequestHandler):
 
 class ActionHandler(webapp2.RequestHandler):
     def post(self, gid):
+        """Processes player action"""
         gid = int(gid)
         pid = int(cgi.escape(self.request.get('player_id')))
         action = str(cgi.escape(self.request.get('action')))
@@ -301,6 +315,7 @@ class ActionHandler(webapp2.RequestHandler):
         the_status = Status.query(
                 ndb.AND(Status.player == pid, Status.game == gid)).fetch()[0]
         the_game = Game.query(Game.id == gid).fetch()[0]
+
         if action == 'bet':
             if the_status.bet == 0:
                 if value <= the_player.tokens and value > 0:
@@ -357,6 +372,7 @@ class ActionHandler(webapp2.RequestHandler):
                 else:
                     self.response.out.write('error')
             return
+
         elif action == 'hit':
             if the_status.bet == 0:
                 self.response.out.write('error')
@@ -389,6 +405,7 @@ class ActionHandler(webapp2.RequestHandler):
                     the_status.your_actions = json.dumps(your_actions)
                     the_status.put()
                     self.response.out.write('ok')
+
         elif action == 'stand':
             your_actions = json.loads(str(the_status.your_actions))
             if your_actions[len(your_actions) - 1] == 'stand':
@@ -398,9 +415,12 @@ class ActionHandler(webapp2.RequestHandler):
                 the_status.your_actions = json.dumps(your_actions)
                 the_status.put()
                 self.response.out.write('ok')
+
         else:
+            # returns error if action is undefined
             self.response.out.write('error')
 
+        # extra processing after every player is in stand mode
         stand_flag = True
         for the_pid in json.loads(str(the_game.players)):
             the_status = Status.query(
