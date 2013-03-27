@@ -93,12 +93,12 @@
 	overflow: auto;
 }
 
-#info
+.info
 {
 	text-align: center;
 }
 
-#info span
+.info span
 {
 	margin: 0 15px;
 }
@@ -107,7 +107,7 @@
 {
 	margin: 5px auto;
 	color: #A9F16C;
-	padding: 15px;
+	padding: 10px;
 }
 
 #table .cards

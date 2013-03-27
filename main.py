@@ -276,17 +276,18 @@ class TableHandler(webapp2.RequestHandler):
                                          Status.game == gid)).fetch()[0]
         snippet = ''
         if the_game.end:
-            snippet += '<p id="info" onclick="location.reload(true);">\
+            snippet += '<p class="info" onclick="location.reload(true);">\
                 Game ends. Click here to join other games.</p>'
         else:
-            snippet += '<p id="info"><span>' + the_game.name
+            snippet += '<p class="info"><span>' + the_game.name
             snippet += '  (' + str(
                 the_game.players_current) + '/' + str(the_game.player_max) + ')\
-                </span>'
-            snippet += '<span>Your tokens: ' + str(tokens) + '</span>'
-            snippet += '<span>Your bet: ' + str(cp_status.bet) + '</span>'
-            snippet += '<span>(Bet current bet value again to double down)</span>'
-            snippet += '</p>'
+                </span></p>'
+        snippet += '<p class="info">'
+        snippet += '<span>Your tokens: ' + str(tokens) + '</span>'
+        snippet += '<span>Your bet: ' + str(cp_status.bet) + '</span>'
+        snippet += '<span>(Bet current bet value again to double down)</span>'
+        snippet += '</p>'
         snippet += '<p class="cards" id="dealer"><span>Dealer</span>'
         if the_game.end:
             hidden_card = str(the_game.common_hidden)
