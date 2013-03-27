@@ -5,7 +5,9 @@ An online BlackJack game on GAE
 
 Demo
 =========
+
 http://zblackjackf.appspot.com/
+
 Please use sparsingly. It's polling every single second. ToT
 
 What to expect
@@ -24,3 +26,8 @@ What to expect
 * Supports Cross Origin Request Sharing. You can write your own client to play. (if you want)
 
 * Concurrency is taken into consideration with properly use of transactions.
+
+Attributions
+=========
+
+* A CORS library written by Monsur Hossain: https://github.com/monsur/cors-python
