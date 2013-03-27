@@ -3,6 +3,11 @@ BlackJack
 
 An online BlackJack game on GAE
 
+Demo
+=========
+http://zblackjackf.appspot.com/
+Please use sparsingly. It's polling every single second. ToT
+
 What to expect
 =========
 
