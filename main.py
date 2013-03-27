@@ -22,6 +22,8 @@ import json
 import random
 from google.appengine.ext import ndb
 from google.appengine.api import users
+from cors.cors_application import CorsApplication
+from cors.cors_options import CorsOptions
 
 
 def id_gen(len=16):
@@ -447,8 +449,7 @@ class ActionHandler(webapp2.RequestHandler):
 jinja_environment = jinja2.Environment(
     loader=jinja2.FileSystemLoader(os.path.dirname(__file__)))
 
-
-app = webapp2.WSGIApplication([
+base_app = webapp2.WSGIApplication([
     ('/', MainHandler),
     ('/player', PlayerHandler),
     ('/games', GamesHandler),
@@ -457,3 +458,19 @@ app = webapp2.WSGIApplication([
     ('/game/(\d+)/visible_table', TableHandler),
     ('/game/(\d+)/action', ActionHandler)
 ], debug=True)
+
+
+app = CorsApplication(base_app,
+                      CorsOptions(allow_origins=True,
+                                  continue_on_error=True))
+
+
+# app = webapp2.WSGIApplication([
+#     ('/', MainHandler),
+#     ('/player', PlayerHandler),
+#     ('/games', GamesHandler),
+#     ('/game/(\d+)/playerConnect', ConnectHandler),
+#     ('/game/(\d+)/status', StatusHandler),
+#     ('/game/(\d+)/visible_table', TableHandler),
+#     ('/game/(\d+)/action', ActionHandler)
+# ], debug=True)
