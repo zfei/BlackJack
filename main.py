@@ -269,19 +269,30 @@ class TableHandler(webapp2.RequestHandler):
         """Returns html snippet of the game table"""
         gid = int(gid)
         the_game = Game.query(Game.id == gid).fetch()[0]
+        user = users.get_current_user()
+        current_player = Player.query(Player.email == user.email()).fetch()[0]
+        tokens = current_player.tokens
+        cp_status = Status.query(ndb.AND(Status.player == current_player.id, 
+                                         Status.game == gid)).fetch()[0]
         snippet = ''
         if the_game.end:
-            snippet = '<script>\
-            alert("Game Ends. Please check your tokens.");\
-            location.reload(true);</script>'
-        snippet += '<p id="info"><span id="game_name">\
-            ' + the_game.name + '</span> '
-        snippet += '<span id="player_count">(' + str(
-            the_game.players_current) + '/' + str(the_game.player_max) + ')\
-            </span>'
-        snippet += '</p>'
+            snippet += '<p id="info" onclick="location.reload(true);">\
+                Game ends. Click here to join other games.</p>'
+        else:
+            snippet += '<p id="info"><span>' + the_game.name
+            snippet += '  (' + str(
+                the_game.players_current) + '/' + str(the_game.player_max) + ')\
+                </span>'
+            snippet += '<span>Your tokens: ' + str(tokens) + '</span>'
+            snippet += '<span>Your bet: ' + str(cp_status.bet) + '</span>'
+            snippet += '<span>(Bet current bet value again to double down)</span>'
+            snippet += '</p>'
         snippet += '<p class="cards" id="dealer"><span>Dealer</span>'
-        snippet += '<span>**</span>'
+        if the_game.end:
+            hidden_card = str(the_game.common_hidden)
+            snippet += '<span>' + card_prettifier(hidden_card) + '</span>'
+        else:
+            snippet += '<span>**</span>'
         for common_card in json.loads(str(the_game.common_visible)):
             snippet += '<span>' + card_prettifier(common_card) + '</span>'
         snippet += '</p>'
@@ -292,8 +303,7 @@ class TableHandler(webapp2.RequestHandler):
                 ' + Player.query(Player.id == pid).fetch()[0].name + '</span>'
             if the_status.bet != 0:
                 the_player = Player.query(Player.id == pid).fetch()[0]
-                user = users.get_current_user()
-                if the_player.email == user.email():
+                if the_player.email == user.email() or the_game.end:
                     snippet += '<span>' + card_prettifier(
                         the_status.your_hidden) + '</span>'
                 else:
@@ -419,6 +429,11 @@ class ActionHandler(webapp2.RequestHandler):
                     Status.game == gid)).fetch(keys_only=True)[0]
         gk = Game.query(Game.id == gid).fetch(keys_only=True)[0]
 
+        # do nothing if game ended
+        the_game = gk.get()
+        if the_game.end:
+            return
+
         if action == 'bet':
             bet_transaction(gk, pk, sk, value, self.response.out)
             
@@ -508,14 +523,3 @@ base_app = webapp2.WSGIApplication([
 app = CorsApplication(base_app,
                       CorsOptions(allow_origins=True,
                                   continue_on_error=True))
-
-
-# app = webapp2.WSGIApplication([
-#     ('/', MainHandler),
-#     ('/player', PlayerHandler),
-#     ('/games', GamesHandler),
-#     ('/game/(\d+)/playerConnect', ConnectHandler),
-#     ('/game/(\d+)/status', StatusHandler),
-#     ('/game/(\d+)/visible_table', TableHandler),
-#     ('/game/(\d+)/action', ActionHandler)
-# ], debug=True)

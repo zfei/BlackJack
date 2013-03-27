@@ -98,6 +98,11 @@
 	text-align: center;
 }
 
+#info span
+{
+	margin: 0 15px;
+}
+
 #table p
 {
 	margin: 5px auto;
