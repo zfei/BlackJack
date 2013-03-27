@@ -179,14 +179,18 @@ class MainHandler(webapp2.RequestHandler):
         """Renders client page"""
         user = users.get_current_user()
         if user:
+            the_player = None
             if Player.query(Player.email == user.email()).fetch() == []:
-                Player().create_player({'name': user.nickname(), 
-                                        'email': user.email()}).put()
+                the_player = Player().create_player({'name': user.nickname(), 
+                                                     'email': user.email()})
+                the_player.put()
+            if the_player == None:
+                the_player = Player.query(
+                    Player.email == user.email()).fetch()[0]
             template_values = {
                 'user': user.nickname(),
-                'player_id': Player.query(
-                    Player.email == user.email()).fetch()[0].id
-                }
+                'player_id': the_player.id
+            }
             template = jinja_environment.get_template('/template/index.html')
             self.response.out.write(template.render(template_values))
         else:
@@ -276,7 +280,7 @@ class TableHandler(webapp2.RequestHandler):
                                          Status.game == gid)).fetch()[0]
         snippet = ''
         if the_game.end:
-            snippet += '<p class="info" onclick="location.reload(true);">\
+            snippet += '<p class="info end" onclick="location.reload(true);">\
                 Game ends. Click here to join other games.</p>'
         else:
             snippet += '<p class="info"><span>' + the_game.name
@@ -416,6 +420,17 @@ def hit_transaction(gk, sk, printer):
             printer.write('ok')
 
 
+@ndb.transactional(retries=100, xg=True)
+def end_the_game_transaction(gk):
+    the_game = gk.get()
+    if the_game.end == False:
+        the_game.end = True
+        the_game.put()
+        return 1
+    else:
+        return 0
+
+
 class ActionHandler(webapp2.RequestHandler):
     def post(self, gid):
         """Processes player action"""
@@ -472,14 +487,20 @@ class ActionHandler(webapp2.RequestHandler):
                 stand_flag = False
                 break
         if stand_flag:
+            if end_the_game_transaction(gk) == 0:
+                return
             dealer_bust = False
+            dealer_visible = json.loads(str(the_game.common_visible))
             dealer_cards = json.loads(str(the_game.common_visible))
             dealer_cards.append(str(the_game.common_hidden))
             the_deck = json.loads(str(the_game.deck))
             while card_sum(dealer_cards) <= 16:
                 if the_deck == []:
                     the_deck = deck_gen()
-                dealer_cards.append(the_deck.pop())
+                new_dealer_card = the_deck.pop()
+                dealer_cards.append(new_dealer_card)
+                dealer_visible.append(new_dealer_card)
+            the_game.common_visible = json.dumps(dealer_visible)
             if card_sum(dealer_cards) > 21:
                 dealer_bust = True
             for the_pid in json.loads(str(the_game.players)):
@@ -495,6 +516,11 @@ class ActionHandler(webapp2.RequestHandler):
                             the_player = Player.query(
                                 Player.email == user.email()).fetch()[0]
                             the_player.tokens += the_status.bet * 2
+                            the_player.put()
+                        elif card_sum(player_cards) == card_sum(dealer_cards):
+                            the_player = Player.query(
+                                Player.email == user.email()).fetch()[0]
+                            the_player.tokens += the_status.bet
                             the_player.put()
                     else:
                         the_player = Player.query(
