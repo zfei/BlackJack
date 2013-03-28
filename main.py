@@ -509,17 +509,16 @@ class ActionHandler(webapp2.RequestHandler):
                     Status.game == gid)).fetch()[0]
                 player_cards = json.loads(str(the_status.your_visible))
                 player_cards.append(str(the_status.your_hidden))
-                user = users.get_current_user()
                 if card_sum(player_cards) <= 21:
                     if not dealer_bust:
                         if card_sum(player_cards) > card_sum(dealer_cards):
                             the_player = Player.query(
-                                Player.email == user.email()).fetch()[0]
+                                Player.id == the_pid).fetch()[0]
                             the_player.tokens += the_status.bet * 2
                             the_player.put()
                         elif card_sum(player_cards) == card_sum(dealer_cards):
                             the_player = Player.query(
-                                Player.email == user.email()).fetch()[0]
+                                Player.id == the_pid).fetch()[0]
                             the_player.tokens += the_status.bet
                             the_player.put()
                     else:
