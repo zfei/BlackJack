@@ -523,7 +523,7 @@ class ActionHandler(webapp2.RequestHandler):
                             the_player.put()
                     else:
                         the_player = Player.query(
-                                Player.email == user.email()).fetch()[0]
+                            Player.id == the_pid).fetch()[0]
                         the_player.tokens += the_status.bet * 2
                         the_player.put()
             the_game.end = True

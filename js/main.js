@@ -70,7 +70,7 @@ function connect(game_id) {
       //called when complete
     },
     success: function(data, textStatus, xhr) {
-      if( data == 'error' ) {
+      if( data === 'error' ) {
         alert('Failed joining the game. Maybe this room is full.');
       } else {
         $('#lobby_wrapper').fadeOut('slow', function(){
@@ -118,7 +118,7 @@ function bet() {
       // $('#request').hide();
     },
     success: function(data, textStatus, xhr) {
-      if( data == 'error' ) {
+      if( data === 'error' ) {
         alert('Failed making bet. Please check your amount.');
       } else {
         // alert('Succeeded.');
@@ -143,7 +143,7 @@ function hit() {
       // $('#request').hide();
     },
     success: function(data, textStatus, xhr) {
-      if( data == 'error' ) {
+      if( data === 'error' ) {
         alert('Failed drawing card. Maybe you chose to stand, doubled down, or busted.');
       }
       getTableInfo();
@@ -166,7 +166,7 @@ function stand() {
       // $('#request').hide();
     },
     success: function(data, textStatus, xhr) {
-      if( data == 'error' ) {
+      if( data === 'error' ) {
         alert('Failed. Maybe you chose to stand, doubled down, or busted.');
       }
       getTableInfo();
