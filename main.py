@@ -284,9 +284,8 @@ class TableHandler(webapp2.RequestHandler):
                 Game ends. Click here to join other games.</p>'
         else:
             snippet += '<p class="info"><span>' + the_game.name
-            snippet += '  (' + str(
-                the_game.players_current) + '/' + str(the_game.player_max) + ')\
-                </span></p>'
+            snippet += '  (' + str(the_game.players_current) + '/\
+                ' + str(the_game.player_max) + ')</span></p>'
         snippet += '<p class="info">'
         snippet += '<span>Your tokens: ' + str(tokens) + '</span>'
         snippet += '<span>Your bet: ' + str(cp_status.bet) + '</span>'
