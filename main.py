@@ -460,7 +460,9 @@ class ActionHandler(webapp2.RequestHandler):
             # therefore no transaction for stand action
             the_status = sk.get()
             your_actions = json.loads(str(the_status.your_actions))
-            if your_actions[len(your_actions) - 1] == 'stand':
+            if your_actions == []:
+                self.response.out.write('error')
+            elif your_actions[len(your_actions) - 1] == 'stand':
                 self.response.out.write('error')
             else:
                 your_actions.append('stand')
@@ -482,6 +484,9 @@ class ActionHandler(webapp2.RequestHandler):
                 ndb.AND(Status.player == the_pid, 
                 Status.game == gid)).fetch()[0]
             your_actions = json.loads(str(the_status.your_actions))
+            if your_actions == []:
+                stand_flag = False
+                continue
             if your_actions[len(your_actions) - 1] != 'stand':
                 stand_flag = False
                 break
