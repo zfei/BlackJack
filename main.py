@@ -26,9 +26,9 @@ from cors.cors_application import CorsApplication
 from cors.cors_options import CorsOptions
 
 
-def id_gen(len=16):
+def id_gen(length=16):
     """Generates and returns a random id of given length"""
-    return int(str(int(random.random() * (10**len))).zfill(len))
+    return int(str(int(random.random() * (10 ** length))).zfill(length))
 
 
 def deck_gen():
@@ -73,7 +73,7 @@ def card_sum(cards):
         elif card[0] == 'A':
             sum += 11
             a_counter += 1
-        elif (card[0] == 'J' or card[0] == 'Q' or card[0] == 'K'):
+        elif card[0] == 'J' or card[0] == 'Q' or card[0] == 'K':
             sum += 10
         else:
             sum += int(card[0])
@@ -107,8 +107,7 @@ class Game(ndb.Model):
         self.players_current = 0
         self.players = '[]'
         the_deck = deck_gen()
-        the_common = []
-        the_common.append(the_deck.pop())
+        the_common = [the_deck.pop()]
         the_common_hidden = the_deck.pop()
         self.common_visible = json.dumps(the_common)
         self.common_hidden = the_common_hidden
@@ -117,8 +116,8 @@ class Game(ndb.Model):
         return self
 
     def to_json(self):
-        json_obj = {'name': self.name, 'id': self.id, 
-                    'player_max': self.player_max, 
+        json_obj = {'name': self.name, 'id': self.id,
+                    'player_max': self.player_max,
                     'players_current': self.players_current,
                     'end': self.end}
         return json_obj
@@ -138,8 +137,8 @@ class Player(ndb.Model):
         return self
 
     def to_json(self):
-        json_obj = {'name': self.name, 'id': self.id, 
-                    'tokens': self.tokens, 
+        json_obj = {'name': self.name, 'id': self.id,
+                    'tokens': self.tokens,
                     'email': self.email}
         return json_obj
 
@@ -166,8 +165,8 @@ class Status(ndb.Model):
         players_id = json.loads(the_game.players)
         json_obj = {
             'name': str(the_game.name),
-            'your_actions': json.loads(self.your_actions), 
-            'your_cards_visisble': json.loads(self.your_visible), 
+            'your_actions': json.loads(self.your_actions),
+            'your_cards_visisble': json.loads(self.your_visible),
             'common_cards_visible': json.loads(the_game.common_visible),
             'players': players_id,
             'bet': self.bet}
@@ -180,11 +179,11 @@ class MainHandler(webapp2.RequestHandler):
         user = users.get_current_user()
         if user:
             the_player = None
-            if Player.query(Player.email == user.email()).fetch() == []:
-                the_player = Player().create_player({'name': user.nickname(), 
+            if not Player.query(Player.email == user.email()).fetch():
+                the_player = Player().create_player({'name': user.nickname(),
                                                      'email': user.email()})
                 the_player.put()
-            if the_player == None:
+            if the_player is None:
                 the_player = Player.query(
                     Player.email == user.email()).fetch()[0]
             template_values = {
@@ -216,9 +215,8 @@ class GamesHandler(webapp2.RequestHandler):
 
     def post(self):
         """Creates new game entity"""
-        new_game = {}
-        new_game['name'] = cgi.escape(self.request.get('name'))
-        new_game['player_max'] = cgi.escape(self.request.get('player_max'))
+        new_game = {'name': cgi.escape(self.request.get('name')),
+                    'player_max': cgi.escape(self.request.get('player_max'))}
         new_game = Game().create_game(new_game)
         new_game.put()
 
@@ -230,9 +228,7 @@ def create_status(gk, pid, printer):
     if the_game.player_max <= the_game.players_current:
         printer.write('error')
     else:
-        new_status = {}
-        new_status['game'] = the_game.id
-        new_status['player'] = pid
+        new_status = {'game': the_game.id, 'player': pid}
         Status().create_status(new_status).put()
         the_game.players_current += 1
         the_players = json.loads(str(the_game.players))
@@ -247,8 +243,9 @@ class ConnectHandler(webapp2.RequestHandler):
         """Connects player to a game specified"""
         gid = int(gid)
         pid = int(cgi.escape(self.request.get('player')))
-        if Status.query(
-            ndb.AND(Status.player == pid, Status.game == gid)).fetch() == []:
+        if not Status.query(
+                ndb.AND(Status.player == pid,
+                        Status.game == gid)).fetch():
             # if the player hasn't connected, create a game status
             game_key = Game.query(Game.id == gid).fetch(keys_only=True)[0]
             create_status(game_key, pid, self.response.out)
@@ -276,7 +273,7 @@ class TableHandler(webapp2.RequestHandler):
         user = users.get_current_user()
         current_player = Player.query(Player.email == user.email()).fetch()[0]
         tokens = current_player.tokens
-        cp_status = Status.query(ndb.AND(Status.player == current_player.id, 
+        cp_status = Status.query(ndb.AND(Status.player == current_player.id,
                                          Status.game == gid)).fetch()[0]
         snippet = ''
         if the_game.end:
@@ -325,7 +322,7 @@ def bet_transaction(gk, pk, sk, value, printer):
     the_player = pk.get()
     the_status = sk.get()
     if the_status.bet == 0:
-        if value <= the_player.tokens and value > 0:
+        if the_player.tokens >= value > 0:
             your_actions = json.loads(str(the_status.your_actions))
             your_actions.append('bet')
             the_status.your_actions = json.dumps(your_actions)
@@ -333,10 +330,10 @@ def bet_transaction(gk, pk, sk, value, printer):
             the_player.tokens -= value
 
             the_deck = json.loads(str(the_game.deck))
-            if the_deck == []:
+            if not the_deck:
                 the_deck = deck_gen()
             your_hidden = the_deck.pop()
-            if the_deck == []:
+            if not the_deck:
                 the_deck = deck_gen()
             your_visible = [the_deck.pop()]
             the_game.deck = json.dumps(the_deck)
@@ -366,7 +363,7 @@ def bet_transaction(gk, pk, sk, value, printer):
             the_player.tokens -= value
 
             the_deck = json.loads(str(the_game.deck))
-            if the_deck == []:
+            if not the_deck:
                 the_deck = deck_gen()
             your_visible = json.loads(str(the_status.your_visible))
             your_visible.append(the_deck.pop())
@@ -400,9 +397,9 @@ def hit_transaction(gk, sk, printer):
             printer.write('error')
         else:
             your_actions.append('hit')
-            
+
             the_deck = json.loads(str(the_game.deck))
-            if the_deck == []:
+            if not the_deck:
                 the_deck = deck_gen()
             your_visible = json.loads(str(the_status.your_visible))
             your_visible.append(the_deck.pop())
@@ -422,7 +419,7 @@ def hit_transaction(gk, sk, printer):
 @ndb.transactional(retries=100, xg=True)
 def end_the_game_transaction(gk):
     the_game = gk.get()
-    if the_game.end == False:
+    if not the_game.end:
         the_game.end = True
         the_game.put()
         return 1
@@ -440,7 +437,7 @@ class ActionHandler(webapp2.RequestHandler):
             value = int(cgi.escape(self.request.get('value')))
         pk = Player.query(Player.id == pid).fetch(keys_only=True)[0]
         sk = Status.query(
-            ndb.AND(Status.player == pid, 
+            ndb.AND(Status.player == pid,
                     Status.game == gid)).fetch(keys_only=True)[0]
         gk = Game.query(Game.id == gid).fetch(keys_only=True)[0]
 
@@ -451,7 +448,7 @@ class ActionHandler(webapp2.RequestHandler):
 
         if action == 'bet':
             bet_transaction(gk, pk, sk, value, self.response.out)
-            
+
         elif action == 'hit':
             hit_transaction(gk, sk, self.response.out)
 
@@ -460,7 +457,7 @@ class ActionHandler(webapp2.RequestHandler):
             # therefore no transaction for stand action
             the_status = sk.get()
             your_actions = json.loads(str(the_status.your_actions))
-            if your_actions == []:
+            if not your_actions:
                 self.response.out.write('error')
             elif your_actions[len(your_actions) - 1] == 'stand':
                 self.response.out.write('error')
@@ -476,15 +473,13 @@ class ActionHandler(webapp2.RequestHandler):
 
         # extra processing after every player is in stand mode
         the_game = gk.get()
-        the_player = pk.get()
-        the_status = sk.get()
         stand_flag = True
         for the_pid in json.loads(str(the_game.players)):
             the_status = Status.query(
-                ndb.AND(Status.player == the_pid, 
-                Status.game == gid)).fetch()[0]
+                ndb.AND(Status.player == the_pid,
+                        Status.game == gid)).fetch()[0]
             your_actions = json.loads(str(the_status.your_actions))
-            if your_actions == []:
+            if not your_actions:
                 stand_flag = False
                 continue
             if your_actions[len(your_actions) - 1] != 'stand':
@@ -499,7 +494,7 @@ class ActionHandler(webapp2.RequestHandler):
             dealer_cards.append(str(the_game.common_hidden))
             the_deck = json.loads(str(the_game.deck))
             while card_sum(dealer_cards) <= 16:
-                if the_deck == []:
+                if not the_deck:
                     the_deck = deck_gen()
                 new_dealer_card = the_deck.pop()
                 dealer_cards.append(new_dealer_card)
@@ -509,8 +504,8 @@ class ActionHandler(webapp2.RequestHandler):
                 dealer_bust = True
             for the_pid in json.loads(str(the_game.players)):
                 the_status = Status.query(
-                    ndb.AND(Status.player == the_pid, 
-                    Status.game == gid)).fetch()[0]
+                    ndb.AND(Status.player == the_pid,
+                            Status.game == gid)).fetch()[0]
                 player_cards = json.loads(str(the_status.your_visible))
                 player_cards.append(str(the_status.your_hidden))
                 if card_sum(player_cards) <= 21:
@@ -540,15 +535,16 @@ jinja_environment = jinja2.Environment(
     loader=jinja2.FileSystemLoader(os.path.dirname(__file__)))
 
 base_app = webapp2.WSGIApplication([
-    ('/', MainHandler),
-    ('/player', PlayerHandler),
-    ('/games', GamesHandler),
-    ('/game/(\d+)/playerConnect', ConnectHandler),
-    ('/game/(\d+)/status', StatusHandler),
-    ('/game/(\d+)/visible_table', TableHandler),
-    ('/game/(\d+)/action', ActionHandler)
-], debug=True)
-
+                                       ('/', MainHandler),
+                                       ('/player', PlayerHandler),
+                                       ('/games', GamesHandler),
+                                       ('/game/(\d+)/playerConnect',
+                                        ConnectHandler),
+                                       ('/game/(\d+)/status', StatusHandler),
+                                       ('/game/(\d+)/visible_table',
+                                        TableHandler),
+                                       ('/game/(\d+)/action', ActionHandler)
+                                   ], debug=True)
 
 app = CorsApplication(base_app,
                       CorsOptions(allow_origins=True,
